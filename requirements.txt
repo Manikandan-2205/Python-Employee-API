@@ -1,0 +1,17 @@
+Flask
+Flask-Migrate
+SQLAlchemy
+cx_Oracle
+Flask
+Flask-RESTful
+Flask-CORS
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-JWT-Extended
+Flask-Caching
+Flask-Login
+Flask-Mail
+Flask-RESTX
+requests
+marshmallow
+flask-apispec
