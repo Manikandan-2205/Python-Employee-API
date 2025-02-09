@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee List</title>
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <link rel="stylesheet" href="jquery.dataTables.min.css">
+    <style>
+        body {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+        }
+
+        .navbar {
+            background-color: #4CAF50;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+
+        .login-form {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .login-form h2 {
+            margin-bottom: 20px;
+        }
+
+        .login-form .form-control {
+            margin-bottom: 15px;
+        }
+
+        .login-form .btn {
+            width: 100%;
+        }
+
+        .table-container {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .table thead {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .table tbody tr {
+            transition: background-color 0.3s;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .table th,
+        .table td {
+            vertical-align: middle;
+            padding: 15px;
+        }
+
+        .table-bordered {
+            border: 1px solid #dee2e6;
+        }
+
+        .table-bordered th,
+        .table-bordered td {
+            border: 1px solid #dee2e6;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .table tbody tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">Employee Management</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Employees</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container-fluid d-flex flex-column align-items-center justify-content-center" style="flex-grow: 1;">
+        <h1 class="text-center mb-4">Employee List</h1>
+        <!-- Login Form -->
+        <div class="login-form">
+            <h2 class="text-center">Login</h2>
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+        </div>
+        <!-- Card with Table -->
+        <div class="card table-container mt-4" id="employeeCard">
+            <div class="card-body">
+                <table class="table table-bordered table-hover" id="employeeTable">
+                    <thead class="">
+                        <tr>
+                            <th>ID</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-active text-light text-bg-info">
+                        <!-- Employee data will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="jquery-3.7.1.min.js"></script>
+    <script src="bootstrap.min.js"></script>
+    <script src="jquery.dataTables.min.js"></script>
+    <script>
+        let jwttoken = "";
+        // Function to handle login
+        $("#loginForm").on("submit", function (event) {
+            event.preventDefault(); // Prevent form submission
+            const username = $("#username").val();
+            const password = $("#password").val();
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:8080/api/jwt/login",
+                contentType: "application/json",
+                data: JSON.stringify({ username: username, password: password }),
+                success: function (response) {
+                    console.log(response);
+                    if (response.token) {
+                        jwttoken = "Bearer " + response.token;
+                        $(".login-form").hide(); // Hide login form
+                        $("#employeeCard").show(); // Show employee card
+                        fetchEmployees(); // Fetch employees
+                    } else {
+                        alert("Login failed. Please check your credentials.");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Login error:", error);
+                    alert("Login failed. Please check the console for more details.");
+                }
+            });
+        });
+        function fetchEmployees() {
+            $.ajax({
+                type: "GET",
+                url: "http://127.0.0.1:8080/api/employees/",
+                headers: {
+                    "Authorization": jwttoken
+                },
+                success: function (data) {
+                    console.log(data);
+                    if (data.success) {
+                        loadEmployeesIntoTable(data.data);
+                    } else {
+                        alert("No employees found or an error occurred.");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error fetching employees:", error);
+                    alert("Failed to fetch employee data. Please check the console for more details.");
+                }
+            });
+        }
+        function loadEmployeesIntoTable(employees) {
+            const tableBody = $("#employeeTable tbody");
+            tableBody.empty();
+            employees.forEach(employee => {
+                const row = `<tr>
+                    <td>${employee.id}</td>
+                    <td>${employee.first_name}</td>
+                    <td>${employee.last_name}</td>
+                    <td>${employee.email}</td>
+                </tr>`;
+                tableBody.append(row);
+            });
+            // Initialize DataTable
+            $('#employeeTable').DataTable();
+        }
+        // Show login form on page load
+        $(document).ready(function () {
+            $("#employeeCard").hide(); // Ensure employee card is hidden initially
+        });
+    </script>
+</body>
+
+</html>
